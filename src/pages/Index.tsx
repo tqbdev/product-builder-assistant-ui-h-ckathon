@@ -43,9 +43,10 @@ const Index = () => {
         toast.success('Files uploaded successfully');
       }
       const { data } = response?.data;
-      setSchema(data.userInputSchema);
-      console.log('data.userInputSchema: ', data.userInputSchema);
-      const logic = data.jsCode;
+      const excelData = data.excel;
+      setSchema(excelData.userInputSchema);
+      console.log('data.userInputSchema: ', excelData.userInputSchema);
+      const logic = excelData.jsCode;
       setLogic(logic);
     } catch (error) {
       toast.error('Failed to upload files');
