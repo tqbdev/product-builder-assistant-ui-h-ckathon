@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface SchemaProperty {
   title: string;
@@ -29,9 +30,10 @@ interface Schema {
 
 interface TravelInsuranceFormProps {
   schema: Schema;
+  logic?: any; // Add this prop for logic handling if needed
 }
 
-export function TravelInsuranceForm({ schema }: TravelInsuranceFormProps) {
+export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,11 +46,11 @@ export function TravelInsuranceForm({ schema }: TravelInsuranceFormProps) {
     setIsSubmitting(true);
     try {
       // Add your API call here
-      console.log('Form submitted:', formData);
-      // Example API call:
-      // await axios.post('/api/travel-insurance', formData);
+      const functionString = logic?.definition;
+      const calculatePremium = eval(`(${functionString})`);
+      const premium = calculatePremium(formData);
+      console.log('premium: ', premium);
     } catch (error) {
-      console.error('Error submitting form:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -60,6 +62,17 @@ export function TravelInsuranceForm({ schema }: TravelInsuranceFormProps) {
     let inputElement;
 
     switch (type) {
+      case 'boolean':
+        inputElement = (
+          <Checkbox
+            id={name}
+            checked={formData[name] || false}
+            onCheckedChange={(checked) => handleChange(name, checked)}
+            disabled={readOnly}
+            className="h-5 w-5"
+          />
+        );
+        break;
       case 'string':
         if (enumValues) {
           inputElement = (
@@ -69,7 +82,7 @@ export function TravelInsuranceForm({ schema }: TravelInsuranceFormProps) {
               disabled={readOnly}
             >
               <SelectTrigger className="w-full h-12 bg-white border-gray-200 rounded-lg shadow-sm">
-                <SelectValue placeholder={`Select ${title}`} />
+                <SelectValue placeholder={`Select ${description}`} />
               </SelectTrigger>
               <SelectContent>
                 {enumValues.map((option) => (
@@ -103,8 +116,8 @@ export function TravelInsuranceForm({ schema }: TravelInsuranceFormProps) {
           <Input
             type="number"
             id={name}
-            value={formData[name] || defaultValue || ''}
-            onChange={(e) => handleChange(name, type === 'integer' ? parseInt(e.target.value) : parseFloat(e.target.value))}
+            value={formData[name]}
+            onChange={(e) => handleChange(name, e.target.value)}
             min={minimum}
             max={maximum}
             disabled={readOnly}
@@ -117,11 +130,13 @@ export function TravelInsuranceForm({ schema }: TravelInsuranceFormProps) {
 
     return (
       <div key={name} className="space-y-2">
-        <Label htmlFor={name} className="text-lg font-medium text-gray-900">
-          {title}
-        </Label>
+        <div className={`flex ${type === 'boolean' ? 'flex-row-reverse justify-end gap-2 items-center' : 'flex-col'}`}>
+          <Label htmlFor={name} className="text-lg font-medium text-gray-900">
+            {description}
+          </Label>
+          {inputElement}
+        </div>
         {description && <p className="text-sm text-gray-600">{description}</p>}
-        {inputElement}
       </div>
     );
   };

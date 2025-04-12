@@ -23,7 +23,7 @@ export const useFileStore = create<FileStore>((set, get) => ({
   setFiles: (files) => set({ files }),
   setLoading: (loading) => set({ isLoading: loading }),
   addFiles: async (uploadedFiles) => {
-    const newFiles: ProcessedFile[] = uploadedFiles.map((file) => ({
+    const newFiles: ProcessedFile[] = uploadedFiles.map((file: File) => ({
       id: crypto.randomUUID(),
       name: file.name,
       type: file.type,

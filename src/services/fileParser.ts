@@ -2,16 +2,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProcessedFile } from "@/types/file";
 import axios from "axios";
 
-export const parseFile = async (file: File): Promise<any> => {
+export const parseFile = async (formData: any): Promise<any> => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const formData = new FormData();
-  formData.append("file", file);
 
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_INVOICE_BE}/upload/file`,
+      `${import.meta.env.VITE_INVOICE_BE}/upload/files`,
       formData,
       {
         headers: {
@@ -21,14 +19,11 @@ export const parseFile = async (file: File): Promise<any> => {
         },
       },
     );
-    console.log("response: ", response);
 
-    if (response.data.message === "Success") {
-      return response.data.data.invoiceData;
-    }
     return response;
   } catch (error) {
     console.error("Upload error:", error);
+    throw error;
   }
 };
 

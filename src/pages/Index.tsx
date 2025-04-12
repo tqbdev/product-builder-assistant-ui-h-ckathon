@@ -1,116 +1,58 @@
-import { useNavigate } from "react-router-dom";
 import FileUpload from "@/components/FileUpload";
-import FileListItem from "@/components/FileListItem";
-import { Button } from "@/components/ui/button";
-import { Download, Trash2 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "@/lib/toast";
+import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/Header";
-import { useFileStore } from "@/store/useFileStore";
+import { parseFile } from "@/services/fileParser.ts";
+import { InvoiceData } from "@/services/invoiceCheckService";
 import { useRef, useState } from "react";
-import html2canvas from "html2canvas-pro";
 import ReactDOM from "react-dom";
 import InvoiceTemplate from "../components/Invoice-template.tsx";
-import { InvoiceData } from "@/services/invoiceCheckService";
-import JSZip, { file } from "jszip";
-import { saveAs } from "file-saver";
-import jsPDF from "jspdf";
+import { TravelInsuranceForm } from "@/components/TravelInsuranceForm";
+import { Loader2 } from "lucide-react";
 
 const Index = () => {
-  const { files, isLoading, addFiles, removeFile, refreshFile, clearAllFiles } =
-    useFileStore();
   const { user, isLoading: isLoadingContext } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   const [data, setData] = useState<InvoiceData>();
+  const [isUploading, setIsUploading] = useState(false);
+  const [schema, setSchema] = useState(null);
+  const [logic, setLogic] = useState(null); // Add this state for logic handling if needed
+  console.log('logic: ', logic);
 
   const invoiceRef = useRef();
-
   const navigate = useNavigate();
 
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      if (!files || files.length === 0) {
-        toast.error("No files to download");
-        return;
-      }
-      if (!user) {
-        toast.error("You must be logged in to download files");
-        navigate("/auth");
-        return;
-      }
-
-      const zip = new JSZip();
-
-      for (const file of files) {
-        const pdf = new jsPDF({
-          orientation: "landscape",
-          unit: "pt",
-          format: "a4",
-        });
-
-        for (const invoice of file.parsedContent) {
-          setData(invoice);
-          setIsVisible(true);
-          await new Promise((resolve) => setTimeout(resolve, 100));
-
-          const canvas = await html2canvas(invoiceRef.current, {
-            width: 1512,
-            height: 740,
-            scale: 1,
-          });
-
-          const imgData = canvas.toDataURL("image/png", 0.8);
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const pageHeight = pdf.internal.pageSize.getHeight();
-          const imgWidth = 1512 / 2;
-          const imgHeight = 740 / 2;
-
-          // Calculate coordinates to center the image
-          const x = (pageWidth - imgWidth) / 2;
-          const y = (pageHeight - imgHeight) / 2;
-
-          pdf.addImage(
-            imgData,
-            "PNG",
-            x,
-            y,
-            imgWidth,
-            imgHeight,
-            undefined,
-            "FAST"
-          );
-
-          if (
-            file.parsedContent.indexOf(invoice) <
-            file.parsedContent.length - 1
-          ) {
-            pdf.addPage();
-          }
-
-          setIsVisible(false);
-        }
-
-        const pdfBlob = pdf.output("blob");
-        zip.file(`${file.name}.pdf`, pdfBlob);
-      }
-
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      saveAs(zipBlob, "invoices.zip");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
   const handleFileUpload = async (uploadedFiles: File[]) => {
     if (!user) {
       toast.error("You must be logged in to upload files");
       navigate("/auth");
       return;
     }
-    await addFiles(uploadedFiles);
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      uploadedFiles.forEach((file) => {
+        formData.append('files', file);
+      });
+
+      const response = await parseFile(formData);
+      if (response.status === 201) {
+        toast.success('Files uploaded successfully');
+      }
+      const { data } = response?.data;
+      setSchema(data.userInputSchema);
+      console.log('data.userInputSchema: ', data.userInputSchema);
+      const logic = data.jsCode;
+      setLogic(logic);
+    } catch (error) {
+      toast.error('Failed to upload files');
+      console.error('Upload error:', error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -127,67 +69,34 @@ const Index = () => {
           </p>
         </div>
 
-        <FileUpload onFileUpload={handleFileUpload} />
-
-        {isLoading ? (
-          <div className="mt-8 text-center">
-            <p className="text-app-gray">Loading your files...</p>
-          </div>
-        ) : files.length > 0 ? (
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-app-gray-dark">
-                Your Files ({files.length})
-              </h2>
-              <Button
-                variant="outline"
-                onClick={handleDownload}
-                disabled={isDownloading || files.length === 0}
-              >
-                <Download
-                  className={`h-4 w-4 mr-1 ${
-                    isDownloading ? "animate-spin" : ""
-                  }`}
-                />
-                {isDownloading ? "Downloading..." : "Download all"}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={clearAllFiles}
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Clear All
-              </Button>
+        <div className="relative">
+          <FileUpload onFileUpload={handleFileUpload} />
+          {isUploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
             </div>
+          )}
+        </div>
 
-            <div className="space-y-4">
-              {files.map((file) => (
-                <FileListItem
-                  key={file.id}
-                  file={file}
-                  onRemove={removeFile}
-                  onRefresh={refreshFile}
-                  onCheckAgain={refreshFile}
-                />
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="mt-8 text-center bg-white p-8 rounded-lg border border-gray-200 shadow-sm">
-            <p className="text-app-gray">
-              No files yet. Upload your first document to get started!
-            </p>
+        {isUploading && (
+          <div className="mt-4 text-center text-app-gray">
+            <p>Processing your files...</p>
           </div>
         )}
       </div>
-      {isVisible &&
-        ReactDOM.createPortal(
-          <div ref={invoiceRef}>
-            <InvoiceTemplate invoiceData={data} />
-          </div>,
-          document.body
-        )}
+
+      {isVisible && ReactDOM.createPortal(
+        <div ref={invoiceRef}>
+          <InvoiceTemplate invoiceData={data} />
+        </div>,
+        document.body
+      )}
+
+      {schema && !isUploading && (
+        <div className="mt-8">
+          <TravelInsuranceForm schema={schema} logic={logic} />
+        </div>
+      )}
     </div>
   );
 };

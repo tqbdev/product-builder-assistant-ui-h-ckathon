@@ -33,30 +33,31 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
   };
 
   const validateFiles = (files: File[]): File[] => {
-    const validFiles: File[] = [];
-    const validTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg", "image/webp"];
-    
-    for (const file of files) {
-      if (validTypes.includes(file.type)) {
-        validFiles.push(file);
-      } else {
-        toast.error(`Invalid file type: ${file.name}`, {
-          description: "Only PDF and image files are allowed"
-        });
-      }
-    }
-    
-    return validFiles;
+    return files
+    // const validFiles: File[] = [];
+    // const validTypes = ["application/pdf", "image/jpeg", "image/png", "image/jpg", "image/webp"];
+
+    // for (const file of files) {
+    //   if (validTypes.includes(file.type)) {
+    //     validFiles.push(file);
+    //   } else {
+    //     toast.error(`Invalid file type: ${file.name}`, {
+    //       description: "Only PDF and image files are allowed"
+    //     });
+    //   }
+    // }
+
+    // return validFiles;
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragging(false);
-    
+
     const droppedFiles = Array.from(e.dataTransfer.files);
     const validFiles = validateFiles(droppedFiles);
-    
+
     if (validFiles.length > 0) {
       onFileUpload(validFiles);
       toast.success(`${validFiles.length} files uploaded successfully`);
@@ -67,12 +68,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       const validFiles = validateFiles(selectedFiles);
-      
+
       if (validFiles.length > 0) {
         onFileUpload(validFiles);
         toast.success(`${validFiles.length} files uploaded successfully`);
       }
-      
+
       // Reset the input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -105,7 +106,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
         onChange={handleFileInputChange}
         className="hidden"
         multiple
-        accept="application/pdf,image/*"
+      // accept="application/pdf,image/*"
       />
       <div className="flex flex-col items-center gap-4">
         <div className="w-16 h-16 bg-app-blue/10 rounded-full flex items-center justify-center">
