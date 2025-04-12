@@ -6,7 +6,7 @@ export interface ProcessedFile {
   type: string;
   size: number;
   file: File;
-  parsedContent: InvoiceData[];
+  parsedContent: any;
   isProcessing: boolean;
   error?: string;
   fileUrl?: string;

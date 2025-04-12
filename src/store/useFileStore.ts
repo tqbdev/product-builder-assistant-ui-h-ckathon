@@ -3,6 +3,7 @@ import { ProcessedFile } from "@/types/file";
 import { parseFileWithAPI } from "@/services/fileParser";
 import { deleteFile } from "@/services/fileService";
 import { checkInvoice, InvoiceData } from "@/services/invoiceCheckService";
+import { parseFileToNotionBlocksWithAPI } from "@/services/notion";
 
 interface FileStore {
   files: ProcessedFile[];
@@ -10,6 +11,7 @@ interface FileStore {
   setFiles: (files: ProcessedFile[]) => void;
   setLoading: (loading: boolean) => void;
   addFiles: (newFiles: File[]) => Promise<void>;
+  addFileWithNotionContents: (newFiles: File[]) => Promise<void>;
   removeFile: (id: string) => Promise<void>;
   refreshFile: (id: string) => Promise<void>;
   updateInvoice: (id: string, invoiceData: InvoiceData) => Promise<void>;
@@ -40,6 +42,30 @@ export const useFileStore = create<FileStore>((set, get) => ({
     for (const fileObj of newFiles) {
       const processedFile = await parseFileWithAPI(fileObj);
       processedFiles.push(processedFile);
+      set((state) => ({
+        files: state.files.map((f) =>
+          f.id === processedFile.id ? processedFile : f
+        ),
+      }));
+    }
+  },
+
+  addFileWithNotionContents: async (uploadedFiles) => {
+    const newFiles: ProcessedFile[] = uploadedFiles.map((file) => ({
+      id: crypto.randomUUID(),
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      file: file,
+      parsedContent: null,
+      isProcessing: true,
+    }));
+
+    set((state) => ({ files: [...state.files, ...newFiles] }));
+
+    // Parse files and update the store with parsed data
+    for (const fileObj of newFiles) {
+      const processedFile = await parseFileToNotionBlocksWithAPI(fileObj);
       set((state) => ({
         files: state.files.map((f) =>
           f.id === processedFile.id ? processedFile : f

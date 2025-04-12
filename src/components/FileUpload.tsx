@@ -117,7 +117,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
             Drag and drop files here
           </h3>
           <p className="text-app-gray mt-1">
-            PDFs and images only (JPG, PNG)
+            PDFs and Excels only (PDF, XLSX)
           </p>
           <div className="flex items-center justify-center gap-2 mt-2">
             <FileText className="h-4 w-4 text-app-gray" />

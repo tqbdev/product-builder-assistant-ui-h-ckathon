@@ -2,14 +2,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { ProcessedFile } from "@/types/file";
 import axios from "axios";
 
-export const parseFile = async (formData: any): Promise<any> => {
+export const parseFile = async (file: File): Promise<any> => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-
+  const formData = new FormData();
+  formData.append("file", file);
   try {
     const response = await axios.post(
-      `${import.meta.env.VITE_INVOICE_BE}/upload/files`,
+      `${import.meta.env.VITE_INVOICE_BE}/upload/parseToNotionBlocks`,
       formData,
       {
         headers: {
@@ -20,14 +21,16 @@ export const parseFile = async (formData: any): Promise<any> => {
       },
     );
 
+    if (response.data.message === "Success") {
+      return response.data.data.blocks;
+    }
     return response;
   } catch (error) {
     console.error("Upload error:", error);
-    throw error;
   }
 };
 
-export const parseFileWithAPI = async (
+export const parseFileToNotionBlocksWithAPI = async (
   fileObj: ProcessedFile,
 ): Promise<ProcessedFile> => {
   try {
