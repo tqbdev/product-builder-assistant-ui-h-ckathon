@@ -119,10 +119,10 @@ const Index = () => {
       <div className="container max-w-5xl py-8 px-4 sm:px-6">
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-app-gray-dark mb-2">
-            Invoice Auto
+            Product Builder Assistant
           </h1>
           <p className="text-app-gray max-w-2xl mx-auto">
-            Upload PDFs and images to extract and edit their content. Our
+            Upload PDFs and Excels to extract and edit their content. Our
             backend will analyze each file and return the information.
           </p>
         </div>

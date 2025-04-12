@@ -19,7 +19,7 @@ const Header = () => {
           className="flex items-center gap-2 text-app-blue font-bold text-xl"
         >
           <FileText className="h-6 w-6" />
-          <span>Invoice Auto</span>
+          <span>Product Builder Assistant</span>
         </Link>
 
         <div className="flex items-center gap-4">
