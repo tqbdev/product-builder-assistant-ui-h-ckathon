@@ -8,7 +8,6 @@ export const parseFile = async (file: File): Promise<any> => {
   } = await supabase.auth.getSession();
   const formData = new FormData();
   formData.append("file", file);
-
   try {
     const response = await axios.post(
       `${import.meta.env.VITE_INVOICE_BE}/upload/parseToNotionBlocks`,
@@ -21,10 +20,9 @@ export const parseFile = async (file: File): Promise<any> => {
         },
       },
     );
-    console.log("response: ", response);
 
     if (response.data.message === "Success") {
-      return response.data.data.invoiceData;
+      return response.data.data.blocks;
     }
     return response;
   } catch (error) {
@@ -32,7 +30,7 @@ export const parseFile = async (file: File): Promise<any> => {
   }
 };
 
-export const parseToNotionBlock = async (
+export const parseFileToNotionBlocksWithAPI = async (
   fileObj: ProcessedFile,
 ): Promise<ProcessedFile> => {
   try {
@@ -52,3 +50,4 @@ export const parseToNotionBlock = async (
     };
   }
 };
+
