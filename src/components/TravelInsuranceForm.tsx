@@ -66,7 +66,7 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
       ...acc,
       [key]: typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value
     }), {});
-    
+
     console.log("🚀 ~ calculatePremiumResult ~ data:", processedData)
     setIsCalculating(true);
     setError(null);
@@ -224,7 +224,6 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
             onChange={(e) => handleChange(name, parseFloat(e.target.value) || 0)}
             min={minimum}
             max={maximum}
-            step="0.01"
             disabled={readOnly}
           />
         );
