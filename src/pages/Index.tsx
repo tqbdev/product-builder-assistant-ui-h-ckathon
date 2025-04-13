@@ -82,15 +82,52 @@ const Index = () => {
     setIsAiResponding(true);
 
     try {
-      const response = await askQuestion(message);
+      const response = await askQuestion(message, {blocks});
       if (response.status >= 200 && response.status < 300) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { role: "assistant", content: response.data },
+          { role: "assistant", content: response?.data?.message },
         ]);
       } else {
         toast.error("Failed to send message");
       }
+
+      // update the blocks data 
+      const newData = response?.data?.data ||[];
+      console.log("🚀 ~ handleChatSubmit ~ newData:", newData)
+      setBlocks(prevBlocks => {
+        // Create a map of existing blocks for faster lookup
+        const existingBlocksMap = new Map(prevBlocks.map(block => [block.id, block]));
+        
+        // Process each block from the new data
+        const updatedBlocks = newData?.map(newBlock => {
+          const existingBlock = existingBlocksMap.get(newBlock.id);
+          console.log("🚀 ~ handleChatSubmit ~ existingBlock:", existingBlock)
+          if (existingBlock) {
+            // Block exists - update it
+            return {
+              ...(existingBlock as object),
+              ...(newBlock as object)
+            };
+          } else {
+            // New block - add it
+            return newBlock;
+          }
+        });
+  
+        // Preserve order of blocks that weren't updated
+        const finalBlocks = prevBlocks.map(block => {
+          const updatedBlock = updatedBlocks.find(newBlock => newBlock.id === block.id);
+          return updatedBlock || block;
+        });
+  
+        // Add any completely new blocks at the end
+        const newBlocks = updatedBlocks.filter(newBlock => 
+          !existingBlocksMap.has(newBlock.id)
+        );
+        
+        return [...finalBlocks, ...newBlocks];
+      });
     } catch (error) {
       toast.error("An error occurred while getting a response");
       console.error("Chat error:", error);

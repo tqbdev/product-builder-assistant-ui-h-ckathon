@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  ChevronDown, 
+import {
+  ChevronDown,
   ChevronUp,
   DollarSign,
   Video,
@@ -49,12 +49,11 @@ interface BlockRendererProps {
 }
 
 const getIcon = (iconName: string | null) => {
-  console.log("🚀 ~ getIcon ~ iconName:", iconName)
   if (!iconName) return null;
-  
+
   // Remove 'Lucide' prefix if it exists
   const cleanIconName = iconName.replace('Lucide', '');
-  
+
   const icons: { [key: string]: React.ReactNode } = {
     'DollarSign': <DollarSign className="w-5 h-5 inline-block mr-2" />,
     'Video': <Video className="w-5 h-5 inline-block mr-2" />,
@@ -145,7 +144,7 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
                             Benefit
                           </th>
                           {benefitsData.config.plans.map((planName, index) => (
-                            <th 
+                            <th
                               key={index}
                               className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
                             >
@@ -161,8 +160,8 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
                               {plan.label}
                             </td>
                             {plan.values.map((value, valueIndex) => (
-                              <td 
-                                key={valueIndex} 
+                              <td
+                                key={valueIndex}
                                 className="px-4 py-3 text-sm text-center text-gray-900"
                               >
                                 {value}
@@ -190,7 +189,11 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      {blocks.map((block, index) => renderBlock(block))}
+      {blocks.map((block, index) =>
+
+        <div key={index}>
+          {renderBlock(block)}
+        </div>)}
     </div>
   );
 };
