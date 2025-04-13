@@ -5,10 +5,12 @@ import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/Header";
 import { parseFile } from "@/services/fileParser.ts";
-import {  useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TravelInsuranceForm } from "@/components/TravelInsuranceForm";
 import { Loader2 } from "lucide-react";
 import BlockRenderer from "@/components/BlockRenderer";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { askQuestion } from "@/services/agentService";
 
 const Index = () => {
   const { user, isLoading: isLoadingContext } = useAuth();
@@ -16,6 +18,7 @@ const Index = () => {
   const [schema, setSchema] = useState(null);
   const [logic, setLogic] = useState(null);
   const [blocks, setBlocks] = useState(null);
+  const [isAiResponding, setIsAiResponding] = useState(false);
 
   const navigate = useNavigate();
 
@@ -30,30 +33,69 @@ const Index = () => {
     try {
       const formData = new FormData();
       uploadedFiles.forEach((file) => {
-        formData.append('files', file);
+        formData.append("files", file);
       });
 
       const response = await parseFile(formData);
       if (response.status === 201) {
-        toast.success('Files uploaded successfully');
+        toast.success("Files uploaded successfully");
       }
       const { data } = response?.data;
       const excelData = data.excel;
       const blocks = data.blocks;
-      if(blocks.length>0)
-      {
+      if (blocks.length > 0) {
         setBlocks(blocks);
       }
-      if(excelData!=null){
+      if (excelData != null) {
         setSchema(excelData?.userInputSchema);
         const logic = excelData.jsCode;
-        setLogic(logic);  
+        setLogic(logic);
       }
     } catch (error) {
-      toast.error('Failed to upload files');
-      console.error('Upload error:', error);
+      toast.error("Failed to upload files");
+      console.error("Upload error:", error);
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content: "Hi there! How can I help you with this insurance product?",
+    },
+  ]);
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleChatSubmit = async (message: string) => {
+    // Handle chat message submission
+    setMessages((prevMessages) => [
+      ...prevMessages,
+      { role: "user", content: message },
+    ]);
+    setMessage("");
+    setIsAiResponding(true);
+
+    try {
+      const response = await askQuestion(message);
+      if (response.status >= 200 && response.status < 300) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { role: "assistant", content: response.data },
+        ]);
+      } else {
+        toast.error("Failed to send message");
+      }
+    } catch (error) {
+      toast.error("An error occurred while getting a response");
+      console.error("Chat error:", error);
+    } finally {
+      setIsAiResponding(false);
     }
   };
 
@@ -87,16 +129,91 @@ const Index = () => {
         )}
       </div>
 
-
-      {schema && !isUploading && (
-        <div className="mt-8">
-          <TravelInsuranceForm schema={schema} logic={logic} />
-        </div>
-      )}
-
-      {blocks && blocks.length && (
-            <BlockRenderer blocks={blocks} />
-      )}
+      <div className="mt-8 flex justify-center items-center">
+        <Tabs>
+          <TabsList className="w-full bg-transparent">
+            {blocks && blocks.length && (
+              <TabsTrigger value="product">Product brochude</TabsTrigger>
+            )}
+            {schema && !isUploading && (
+              <TabsTrigger value="form">Buy</TabsTrigger>
+            )}
+          </TabsList>
+          <TabsContent value="product">
+            <div className="flex flex-col md:flex-row items-start justify-center gap-4 p-4">
+              <div className="w-full md:w-2/3">
+                <BlockRenderer blocks={blocks} />
+              </div>
+              <div className="w-full md:w-1/3 sticky top-4 self-start border rounded-lg shadow-md p-4 bg-white">
+                <div className="flex flex-col h-[500px]">
+                  <div className="text-lg font-medium mb-2">Chat with us</div>
+                  <div className="flex-1 overflow-y-auto mb-4 p-2 space-y-2 bg-gray-50 rounded">
+                    {messages.map((msg, index) => (
+                      <div
+                        key={index}
+                        className={`p-2 rounded-lg max-w-[80%] ${
+                          msg.role === "assistant"
+                            ? "bg-blue-100 mr-auto"
+                            : "bg-white ml-auto border"
+                        }`}
+                      >
+                        {msg.content}
+                      </div>
+                    ))}
+                    {isAiResponding && (
+                      <div className="p-2 rounded-lg max-w-[80%] bg-blue-100 mr-auto">
+                        <div className="flex items-center space-x-1">
+                          <div
+                            className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "0ms" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "150ms" }}
+                          ></div>
+                          <div
+                            className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"
+                            style={{ animationDelay: "300ms" }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                  <div className="flex">
+                    <input
+                      type="text"
+                      placeholder="Type your message..."
+                      className="flex-1 border rounded-l-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleChatSubmit(message);
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => handleChatSubmit(message)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleChatSubmit(message);
+                        }
+                      }}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="form">
+            <TravelInsuranceForm schema={schema} logic={logic} />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
