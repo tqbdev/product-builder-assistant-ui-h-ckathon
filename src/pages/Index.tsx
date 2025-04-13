@@ -12,6 +12,34 @@ import BlockRenderer from "@/components/BlockRenderer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { askQuestion } from "@/services/agentService";
 
+interface Plan {
+  id: string;
+  label: string;
+  values: string[];
+}
+
+interface BenefitsSection {
+  section: string;
+  plans: Plan[];
+}
+
+interface BenefitsData {
+  config: {
+    plans: string[];
+  };
+  sections: BenefitsSection[];
+}
+
+interface Block {
+  id: string;
+  type: string;
+  data: string | string[][] | BenefitsData;
+  config?: {
+    className?: string;
+    icon?: string | null;
+  };
+}
+
 const Index = () => {
   const { user, isLoading: isLoadingContext } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
@@ -96,32 +124,63 @@ const Index = () => {
       const newData = response?.data?.data ||[];
       console.log("🚀 ~ handleChatSubmit ~ newData:", newData)
       setBlocks(prevBlocks => {
-        // Create a map of existing blocks for faster lookup
         const existingBlocksMap = new Map(prevBlocks.map(block => [block.id, block]));
         
-        // Process each block from the new data
-        const updatedBlocks = newData?.map(newBlock => {
-          const existingBlock = existingBlocksMap.get(newBlock.id);
+        const updatedBlocks = newData.map(newBlock => {
+          const existingBlock:Block = existingBlocksMap.get(newBlock.id);
           console.log("🚀 ~ handleChatSubmit ~ existingBlock:", existingBlock)
           if (existingBlock) {
-            // Block exists - update it
+            // Special handling for benefits blocks
+            if (newBlock.type === "benefits" && existingBlock.type === "benefits") {
+              // Cast to appropriate types for benefits data
+              const existingBenefits = existingBlock.data as BenefitsData;
+              const newBenefits = newBlock.data as BenefitsData;
+              
+              // Update only the plans within each section
+              const updatedSections = existingBenefits.sections.map(existingSection => {
+                const newSection = newBenefits.sections.find(
+                  s => s.section === existingSection.section
+                );
+                
+                if (newSection) {
+                  return {
+                    ...existingSection,
+                    plans: newSection.plans.map(newPlan => {
+                      const existingPlan = existingSection.plans.find(
+                        p => p.id === newPlan.id
+                      );
+                      return existingPlan ? { ...existingPlan, ...newPlan } : newPlan;
+                    })
+                  };
+                }
+                return existingSection;
+              });
+
+              // Return updated benefits block with only plans modified
+              return {
+                ...existingBlock,
+                data: {
+                  ...existingBenefits,
+                  sections: updatedSections
+                }
+              };
+            }
+            
+            // For non-benefits blocks, update normally
             return {
               ...(existingBlock as object),
               ...(newBlock as object)
-            };
-          } else {
-            // New block - add it
-            return newBlock;
+            } as Block;
           }
+          
+          return newBlock;
         });
   
-        // Preserve order of blocks that weren't updated
         const finalBlocks = prevBlocks.map(block => {
           const updatedBlock = updatedBlocks.find(newBlock => newBlock.id === block.id);
           return updatedBlock || block;
         });
   
-        // Add any completely new blocks at the end
         const newBlocks = updatedBlocks.filter(newBlock => 
           !existingBlocksMap.has(newBlock.id)
         );
