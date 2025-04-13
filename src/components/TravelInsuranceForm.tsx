@@ -62,6 +62,12 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
   }, [schema]);
 
   const calculatePremiumResult = async (data: Record<string, any>) => {
+    const processedData = Object.entries(data).reduce((acc, [key, value]) => ({
+      ...acc,
+      [key]: typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value
+    }), {});
+    
+    console.log("🚀 ~ calculatePremiumResult ~ data:", processedData)
     setIsCalculating(true);
     setError(null);
     try {
@@ -70,7 +76,8 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
         throw new Error('Premium calculation logic not provided');
       }
       const calculatePremium = eval(`(${functionString})`);
-      const premium = calculatePremium(data);
+      const premium = calculatePremium(processedData);
+      console.log("🚀 ~ calculatePremiumResult ~ premium:", premium)
       setPremiumResult(premium);
     } catch (error) {
       console.error('Error calculating premium:', error);
@@ -201,7 +208,6 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
             <Input
               type="text"
               id={name}
-              value={formData[name] || ''}
               onChange={(e) => handleChange(name, e.target.value)}
               disabled={readOnly}
               className="h-12 bg-white border-gray-200 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500"
@@ -215,10 +221,10 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
           <Input
             type="number"
             id={name}
-            value={formData[name]}
-            onChange={(e) => handleChange(name, e.target.value)}
+            onChange={(e) => handleChange(name, parseFloat(e.target.value) || 0)}
             min={minimum}
             max={maximum}
+            step="0.01"
             disabled={readOnly}
           />
         );
