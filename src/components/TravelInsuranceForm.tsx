@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button"; // Add this import
 import {
   Select,
   SelectContent,
@@ -9,7 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useState } from 'react';
 
 interface SchemaProperty {
   title: string;
@@ -33,27 +33,126 @@ interface TravelInsuranceFormProps {
   logic?: any; // Add this prop for logic handling if needed
 }
 
+interface PremiumResult {
+  basePremium: number;
+  cruiseOptionPremium: number;
+  childUpgradeOptionPremium: number;
+  totalOptionsPremium: number;
+  totalPremiumBeforeLevy: number;
+  levyAmount: number;
+  finalPremiumPayable: number;
+}
+
 export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [premiumResult, setPremiumResult] = useState<PremiumResult | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (name: string, value: any) => {
-    setFormData({ ...formData, [name]: value });
+  // Initialize form with default values
+  useEffect(() => {
+    if (schema?.properties) {
+      const defaultValues = Object.entries(schema.properties).reduce((acc, [key, prop]) => ({
+        ...acc,
+        [key]: prop.default || (prop.type === 'boolean' ? false : '')
+      }), {});
+      setFormData(defaultValues);
+      calculatePremiumResult(defaultValues);
+    }
+  }, [schema]);
+
+  const calculatePremiumResult = async (data: Record<string, any>) => {
+    setIsCalculating(true);
+    setError(null);
+    try {
+      const functionString = logic?.definition;
+      if (!functionString) {
+        throw new Error('Premium calculation logic not provided');
+      }
+      const calculatePremium = eval(`(${functionString})`);
+      const premium = calculatePremium(data);
+      setPremiumResult(premium);
+    } catch (error) {
+      console.error('Error calculating premium:', error);
+      setError('Failed to calculate premium. Please check your inputs.');
+      setPremiumResult(null);
+    } finally {
+      setIsCalculating(false);
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      // Add your API call here
-      const functionString = logic?.definition;
-      const calculatePremium = eval(`(${functionString})`);
-      const premium = calculatePremium(formData);
-      console.log('premium: ', premium);
-    } catch (error) {
-    } finally {
-      setIsSubmitting(false);
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  const renderPremiumTable = (result: Record<string, any>) => {
+    return Object.entries(result).map(([key, value], index, array) => {
+      const isLastItem = index === array.length - 1;
+      const formattedValue = typeof value === 'number' ? formatCurrency(value) : value;
+      
+      return (
+        <tr 
+          key={key} 
+          className={`
+            ${!isLastItem ? 'border-b' : ''} 
+            ${isLastItem ? 'font-semibold bg-gray-50' : ''}
+            hover:bg-gray-50 transition-colors
+          `}
+        >
+          <td className="py-3 px-4 text-gray-600">{formatPremiumKey(key)}</td>
+          <td className="py-3 px-4 text-right font-medium">{formattedValue}</td>
+        </tr>
+      );
+    });
+  };
+
+  const renderPremiumResults = () => {
+    if (error) {
+      return (
+        <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">
+          {error}
+        </div>
+      );
     }
+
+    if (isCalculating) {
+      return (
+        <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6">
+          <Skeleton className="h-6 w-48 mb-4" />
+          <div className="space-y-3">
+            {[...Array(7)].map((_, i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    if (premiumResult) {
+      return (
+        <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+          <h3 className="text-xl font-semibold mb-4">Premium Calculation Results</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <tbody>{renderPremiumTable(premiumResult)}</tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const handleChange = (name: string, value: any) => {
+    const newFormData = { ...formData, [name]: value };
+    setFormData(newFormData);
+    calculatePremiumResult(newFormData);
   };
 
   const renderInput = (name: string, property: SchemaProperty) => {
@@ -136,7 +235,6 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
           </Label>
           {inputElement}
         </div>
-        {description && <p className="text-sm text-gray-600">{description}</p>}
       </div>
     );
   };
@@ -145,8 +243,16 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
     return <div>Schema not provided or invalid.</div>;
   }
 
+  const formatPremiumKey = (key: string): string => {
+    return key
+      .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+      .replace(/^./, (str) => str.toUpperCase()) // Capitalize first letter
+      .replace(/Premium/g, '') // Remove the word "Premium" for cleaner display
+      .trim();
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="max-w-5xl mx-auto py-8 px-4">
+    <div className="max-w-5xl mx-auto py-8 px-4">
       <div className="space-y-4 mb-8">
         <h2 className="text-3xl font-bold text-gray-900">{schema.title}</h2>
         {schema.description && (
@@ -155,25 +261,17 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
           </p>
         )}
       </div>
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-8">
+      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-8 shadow-sm">
         {Object.entries(schema.properties).map(([name, property]) => (
           <div
             key={name}
-            className="pb-6 border-b border-gray-200 last:border-0 last:pb-0"
+            className="pb-4 border-b border-gray-200 last:border-0 last:pb-0 hover:bg-gray-50 p-4 rounded-lg transition-colors"
           >
             {renderInput(name, property)}
           </div>
         ))}
       </div>
-      <div className="mt-8 flex justify-end">
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-        >
-          {isSubmitting ? 'Submitting...' : 'Submit Application'}
-        </Button>
-      </div>
-    </form>
+      {renderPremiumResults()}
+    </div>
   );
 }
