@@ -94,10 +94,10 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
     return Object.entries(result).map(([key, value], index, array) => {
       const isLastItem = index === array.length - 1;
       const formattedValue = typeof value === 'number' ? formatCurrency(value) : value;
-      
+
       return (
-        <tr 
-          key={key} 
+        <tr
+          key={key}
           className={`
             ${!isLastItem ? 'border-b' : ''} 
             ${isLastItem ? 'font-semibold bg-gray-50' : ''}
@@ -114,15 +114,15 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
   const renderPremiumResults = () => {
     if (error) {
       return (
-        <div className="mt-8 bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">
-          {error}
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600">
+          Please fill out all required fields!
         </div>
       );
     }
 
     if (isCalculating) {
       return (
-        <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
           <Skeleton className="h-6 w-48 mb-4" />
           <div className="space-y-3">
             {[...Array(7)].map((_, i) => (
@@ -135,7 +135,7 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
 
     if (premiumResult) {
       return (
-        <div className="mt-8 bg-white rounded-lg border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
           <h3 className="text-xl font-semibold mb-4">Premium Calculation Results</h3>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -231,7 +231,7 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
       <div key={name} className="space-y-2">
         <div className={`flex ${type === 'boolean' ? 'flex-row-reverse justify-end gap-2 items-center' : 'flex-col'}`}>
           <Label htmlFor={name} className="text-lg font-medium text-gray-900">
-            {description}
+            {title || description}
           </Label>
           {inputElement}
         </div>
@@ -252,7 +252,7 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
+    <div className="max-w-7xl mx-auto py-8 px-4">
       <div className="space-y-4 mb-8">
         <h2 className="text-3xl font-bold text-gray-900">{schema.title}</h2>
         {schema.description && (
@@ -261,17 +261,21 @@ export function TravelInsuranceForm({ schema, logic }: TravelInsuranceFormProps)
           </p>
         )}
       </div>
-      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-8 shadow-sm">
-        {Object.entries(schema.properties).map(([name, property]) => (
-          <div
-            key={name}
-            className="pb-4 border-b border-gray-200 last:border-0 last:pb-0 hover:bg-gray-50 p-4 rounded-lg transition-colors"
-          >
-            {renderInput(name, property)}
-          </div>
-        ))}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm h-fit">
+          {Object.entries(schema.properties).map(([name, property]) => (
+            <div
+              key={name}
+              className="pb-4 mb-4 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0"
+            >
+              {renderInput(name, property)}
+            </div>
+          ))}
+        </div>
+        <div className="lg:sticky lg:top-8">
+          {renderPremiumResults()}
+        </div>
       </div>
-      {renderPremiumResults()}
     </div>
   );
 }
