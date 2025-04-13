@@ -23,7 +23,7 @@ const PdfToNotion = () => {
   const { user, isLoading: isLoadingContext } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   const [data, setData] = useState<InvoiceData>();
-  const [blockData, setBlockData] = useState<any[]>([]);
+  const [blockData, setBlockData] = useState<any>();
   console.log('blockData',blockData)
   const invoiceRef = useRef();
   const navigate = useNavigate();

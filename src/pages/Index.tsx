@@ -5,23 +5,18 @@ import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/Header";
 import { parseFile } from "@/services/fileParser.ts";
-import { InvoiceData } from "@/services/invoiceCheckService";
-import { useRef, useState } from "react";
-import ReactDOM from "react-dom";
-import InvoiceTemplate from "../components/Invoice-template.tsx";
+import {  useState } from "react";
 import { TravelInsuranceForm } from "@/components/TravelInsuranceForm";
 import { Loader2 } from "lucide-react";
+import BlockRenderer from "@/components/BlockRenderer";
 
 const Index = () => {
   const { user, isLoading: isLoadingContext } = useAuth();
-  const [isVisible, setIsVisible] = useState(false);
-  const [data, setData] = useState<InvoiceData>();
   const [isUploading, setIsUploading] = useState(false);
   const [schema, setSchema] = useState(null);
-  const [logic, setLogic] = useState(null); // Add this state for logic handling if needed
-  console.log('logic: ', logic);
+  const [logic, setLogic] = useState(null);
+  const [blocks, setBlocks] = useState(null);
 
-  const invoiceRef = useRef();
   const navigate = useNavigate();
 
   const handleFileUpload = async (uploadedFiles: File[]) => {
@@ -44,10 +39,16 @@ const Index = () => {
       }
       const { data } = response?.data;
       const excelData = data.excel;
-      setSchema(excelData.userInputSchema);
-      console.log('data.userInputSchema: ', excelData.userInputSchema);
-      const logic = excelData.jsCode;
-      setLogic(logic);
+      const blocks = data.blocks;
+      if(blocks.length>0)
+      {
+        setBlocks(blocks);
+      }
+      if(excelData!=null){
+        setSchema(excelData?.userInputSchema);
+        const logic = excelData.jsCode;
+        setLogic(logic);  
+      }
     } catch (error) {
       toast.error('Failed to upload files');
       console.error('Upload error:', error);
@@ -86,17 +87,15 @@ const Index = () => {
         )}
       </div>
 
-      {isVisible && ReactDOM.createPortal(
-        <div ref={invoiceRef}>
-          <InvoiceTemplate invoiceData={data} />
-        </div>,
-        document.body
-      )}
 
       {schema && !isUploading && (
         <div className="mt-8">
           <TravelInsuranceForm schema={schema} logic={logic} />
         </div>
+      )}
+
+      {blocks && blocks.length && (
+            <BlockRenderer blocks={blocks} />
       )}
     </div>
   );
