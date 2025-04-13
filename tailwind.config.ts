@@ -1,5 +1,5 @@
-
 import type { Config } from "tailwindcss";
+import colors from 'tailwindcss/colors';
 
 export default {
 	darkMode: ["class"],
@@ -69,7 +69,29 @@ export default {
 					'gray-light': '#F1F5F9',
 					'gray': '#64748B',
 					'gray-dark': '#334155'
-				}
+				},
+				slate: colors.slate,
+				gray: colors.gray,
+				zinc: colors.zinc,
+				neutral: colors.neutral,
+				stone: colors.stone,
+				red: colors.red,
+				orange: colors.orange,
+				amber: colors.amber,
+				yellow: colors.yellow,
+				lime: colors.lime,
+				green: colors.green,
+				emerald: colors.emerald,
+				teal: colors.teal,
+				cyan: colors.cyan,
+				sky: colors.sky,
+				blue: colors.blue,
+				indigo: colors.indigo,
+				violet: colors.violet,
+				purple: colors.purple,
+				fuchsia: colors.fuchsia,
+				pink: colors.pink,
+				rose: colors.rose,
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

@@ -1,11 +1,22 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { 
+  ChevronDown, 
+  ChevronUp,
+  DollarSign,
+  Video,
+  Shield,
+  Umbrella,
+  Users,
+  Dumbbell,
+  Car,
+  Anchor,
+  Heart,
+  Smartphone
+} from 'lucide-react';
 
 interface BlockConfig {
-  size: string;
-  bold: boolean;
-  color: string;
-  plans?: string[];
+  className?: string;
+  icon?: string | null;
 }
 
 interface Plan {
@@ -37,6 +48,29 @@ interface BlockRendererProps {
   blocks: Block[];
 }
 
+const getIcon = (iconName: string | null) => {
+  console.log("🚀 ~ getIcon ~ iconName:", iconName)
+  if (!iconName) return null;
+  
+  // Remove 'Lucide' prefix if it exists
+  const cleanIconName = iconName.replace('Lucide', '');
+  
+  const icons: { [key: string]: React.ReactNode } = {
+    'DollarSign': <DollarSign className="w-5 h-5 inline-block mr-2" />,
+    'Video': <Video className="w-5 h-5 inline-block mr-2" />,
+    'Shield': <Shield className="w-5 h-5 inline-block mr-2" />,
+    'Umbrella': <Umbrella className="w-5 h-5 inline-block mr-2" />,
+    'Users': <Users className="w-5 h-5 inline-block mr-2" />,
+    'Dumbbell': <Dumbbell className="w-5 h-5 inline-block mr-2" />,
+    'Car': <Car className="w-5 h-5 inline-block mr-2" />,
+    'Anchor': <Anchor className="w-5 h-5 inline-block mr-2" />,
+    'Heart': <Heart className="w-5 h-5 inline-block mr-2" />,
+    'Smartphone': <Smartphone className="w-5 h-5 inline-block mr-2" />
+  };
+
+  return icons[cleanIconName] || null;
+};
+
 const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
   const [expandedSections, setExpandedSections] = useState<Set<number>>(new Set());
 
@@ -51,46 +85,37 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
   };
 
   const renderBlock = (block: Block) => {
-    const style = {
-      fontSize: block?.config?.size,
-      fontWeight: block?.config?.bold ? 'bold' : 'normal',
-      color: block?.config?.color,
-      marginBottom: '0.5rem',
-    };
+    const styled = block?.config?.className;
+    const icon = block?.config?.icon;
 
     switch (block.type) {
       case 'heading':
-        return <h2 style={style}>{block.data as string}</h2>;
+        return (
+          <h1 className={styled}>
+            {getIcon(icon)}
+            {block.data as string}
+          </h1>
+        );
       case 'text':
-        return <p style={style}>{block.data as string}</p>;
+        return (
+          <p className={styled}>
+            {getIcon(icon)}
+            {block.data as string}
+          </p>
+        );
       case 'paragraph':
-        return <p style={style}>{block.data as string}</p>;
+        return (
+          <p className={styled}>
+            {getIcon(icon)}
+            {block.data as string}
+          </p>
+        );
       case 'bulleted list item':
         return (
-          <li style={{ ...style, listStyleType: 'disc', marginLeft: '1.5rem' }}>
+          <li className={styled}>
+            {getIcon(icon)}
             {block.data as string}
           </li>
-        );
-      case 'table':
-        return (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-200">
-              <tbody>
-                {(block.data as string[][]).map((row, rowIndex) => (
-                  <tr key={rowIndex} className={rowIndex === 0 ? 'bg-gray-50' : ''}>
-                    {row.map((cell, cellIndex) => (
-                      <td 
-                        key={cellIndex} 
-                        className={`px-4 py-2 border border-gray-200 ${rowIndex === 0 ? 'font-semibold' : ''}`}
-                      >
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         );
       case 'benefits':
         const benefitsData = block.data as BenefitsData;
@@ -154,15 +179,18 @@ const BlockRenderer: React.FC<BlockRendererProps> = ({ blocks }) => {
           </div>
         );
       default:
-        return <p style={style}>{block.data as string}</p>;
+        return (
+          <p className={styled}>
+            {getIcon(icon)}
+            {block.data as string}
+          </p>
+        );
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      {blocks.map((block, index) => (
-        <React.Fragment key={index}>{renderBlock(block)}</React.Fragment>
-      ))}
+      {blocks.map((block, index) => renderBlock(block))}
     </div>
   );
 };
